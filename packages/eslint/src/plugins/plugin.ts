@@ -20,6 +20,10 @@ import { basename, dirname, join, normalize, sep } from 'node:path/posix';
 import { hashObject } from 'nx/src/hasher/file-hasher';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
 import { combineGlobPatterns } from 'nx/src/utils/globs';
+import {
+  normalizeExtensions,
+  normalizeOptions,
+} from 'nx/src/utils/normalize-options';
 import { globWithWorkspaceContext } from 'nx/src/utils/workspace-context';
 import { gte } from 'semver';
 import type { ESLint as ESLintType } from 'eslint';
@@ -50,6 +54,12 @@ const DEFAULT_EXTENSIONS = [
   'html',
   'vue',
 ];
+
+const defaultOptions: Required<EslintPluginOptions> = {
+  targetName: 'lint',
+  extensions: DEFAULT_EXTENSIONS,
+};
+
 const PROJECT_CONFIG_FILENAMES = ['project.json', 'package.json'];
 const ESLINT_CONFIG_GLOB_V1 = combineGlobPatterns(
   ESLINT_CONFIG_FILENAMES.map((f) => `**/${f}`)
@@ -80,7 +90,9 @@ const internalCreateNodes = async (
   context: CreateNodesContext,
   projectsCache: Record<string, CreateNodesResult['projects']>
 ): Promise<CreateNodesResult> => {
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions, {
+    extensions: normalizeExtensions,
+  });
   const configDir = dirname(configFilePath);
 
   // Ensure that configFiles are set, e2e-run fails due to them being undefined in CI (does not occur locally)
@@ -265,7 +277,9 @@ const internalCreateNodesV2 = async (
 export const createNodesV2: CreateNodesV2<EslintPluginOptions> = [
   ESLINT_CONFIG_GLOB_V2,
   async (configFiles, options, context) => {
-    options = normalizeOptions(options);
+    options = normalizeOptions(options, defaultOptions, {
+      extensions: normalizeExtensions,
+    });
     const optionsHash = hashObject(options);
     const cachePath = join(
       workspaceDataDirectory,
@@ -538,23 +552,6 @@ function buildEslintTargets(
   targets[options.targetName] = targetConfig;
 
   return targets;
-}
-
-function normalizeOptions(options: EslintPluginOptions): EslintPluginOptions {
-  const normalizedOptions: EslintPluginOptions = {
-    targetName: options?.targetName ?? 'lint',
-  };
-
-  // Normalize user input for extensions (strip leading . characters)
-  if (Array.isArray(options?.extensions)) {
-    normalizedOptions.extensions = options.extensions.map((f) =>
-      f.replace(/^\.+/, '')
-    );
-  } else {
-    normalizedOptions.extensions = DEFAULT_EXTENSIONS;
-  }
-
-  return normalizedOptions;
 }
 
 /**

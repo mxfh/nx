@@ -25,6 +25,7 @@ import { existsSync, readdirSync, readFileSync } from 'fs';
 import { loadViteDynamicImport } from '../utils/executor-utils';
 import { addBuildAndWatchDepsTargets } from '@nx/js/src/plugins/typescript/util';
 import { isUsingTsSolutionSetup as _isUsingTsSolutionSetup } from '@nx/js/src/utils/typescript/ts-solution-setup';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 
 export interface RemixPluginOptions {
   buildTargetName?: string;
@@ -35,6 +36,14 @@ export interface RemixPluginOptions {
   watchDepsTargetName?: string;
   serveStaticTargetName?: string;
 }
+
+const defaultOptions: RemixPluginOptions = {
+  buildTargetName: 'build',
+  devTargetName: 'dev',
+  startTargetName: 'start',
+  typecheckTargetName: 'typecheck',
+  serveStaticTargetName: 'serve-static',
+};
 
 const pmc = getPackageManagerCommand();
 
@@ -122,7 +131,7 @@ async function createNodesInternal(
     return {};
   }
 
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions);
 
   const remixCompiler = determineIsRemixVite(
     configFilePath,
@@ -430,17 +439,6 @@ async function getBuildPaths(
       assetsBuildDirectory: 'build/client',
     };
   }
-}
-
-function normalizeOptions(options: RemixPluginOptions) {
-  options ??= {};
-  options.buildTargetName ??= 'build';
-  options.devTargetName ??= 'dev';
-  options.startTargetName ??= 'start';
-  options.typecheckTargetName ??= 'typecheck';
-  options.serveStaticTargetName ??= 'serve-static';
-
-  return options;
 }
 
 function determineIsRemixVite(configFilePath: string, workspaceRoot: string) {

@@ -23,6 +23,7 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 import { getFilesInDirectoryUsingContext } from 'nx/src/utils/workspace-context';
 import { minimatch } from 'minimatch';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { getLockFileName } from '@nx/js';
 import { loadConfigFile } from '@nx/devkit/src/utils/config-utils';
 import { hashObject } from 'nx/src/hasher/file-hasher';
@@ -34,11 +35,10 @@ export interface PlaywrightPluginOptions {
   ciTargetName?: string;
 }
 
-interface NormalizedOptions {
-  targetName: string;
-  ciTargetName?: string;
-}
-
+const defaultOptions: Required<PlaywrightPluginOptions> = {
+  targetName: 'e2e',
+  ciTargetName: 'e2e-ci',
+};
 type PlaywrightTargets = Pick<ProjectConfiguration, 'targets' | 'metadata'>;
 
 function readTargetsCache(
@@ -115,7 +115,7 @@ async function createNodesInternal(
     return {};
   }
 
-  const normalizedOptions = normalizeOptions(options);
+  const normalizedOptions = normalizeOptions(options, defaultOptions);
 
   const hash = await calculateHashForCreateNodes(
     projectRoot,
@@ -365,14 +365,6 @@ function createMatcher(pattern: string | RegExp | Array<string | RegExp>) {
       }
     };
   }
-}
-
-function normalizeOptions(options: PlaywrightPluginOptions): NormalizedOptions {
-  return {
-    ...options,
-    targetName: options?.targetName ?? 'e2e',
-    ciTargetName: options?.ciTargetName ?? 'e2e-ci',
-  };
 }
 
 function getTestOutput(playwrightConfig: PlaywrightTestConfig): string {

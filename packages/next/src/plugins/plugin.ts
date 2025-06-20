@@ -18,6 +18,7 @@ import { getNamedInputs } from '@nx/devkit/src/utils/get-named-inputs';
 import { existsSync, readdirSync } from 'fs';
 
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { calculateHashForCreateNodes } from '@nx/devkit/src/utils/calculate-hash-for-create-nodes';
 import { getLockFileName } from '@nx/js';
 import { loadConfigFile } from '@nx/devkit/src/utils/config-utils';
@@ -35,6 +36,12 @@ export interface NextPluginOptions {
   buildDepsTargetName?: string;
   watchDepsTargetName?: string;
 }
+
+const defaultOptions: NextPluginOptions = {
+  buildTargetName: 'build',
+  devTargetName: 'dev',
+  startTargetName: 'start',
+};
 
 const pmc = getPackageManagerCommand();
 
@@ -130,7 +137,7 @@ async function createNodesInternal(
   ) {
     return {};
   }
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions);
 
   const hash = await calculateHashForCreateNodes(
     projectRoot,
@@ -273,15 +280,6 @@ function getNextConfig(
   const resolvedPath = join(context.workspaceRoot, configFilePath);
 
   return loadConfigFile(resolvedPath);
-}
-
-function normalizeOptions(options: NextPluginOptions): NextPluginOptions {
-  options ??= {};
-  options.buildTargetName ??= 'build';
-  options.devTargetName ??= 'dev';
-  options.startTargetName ??= 'start';
-  options.serveStaticTargetName ??= 'serve-static';
-  return options;
 }
 
 function getInputs(

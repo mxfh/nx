@@ -18,6 +18,7 @@ import { getNamedInputs } from '@nx/devkit/src/utils/get-named-inputs';
 import { existsSync, readdirSync } from 'fs';
 import { calculateHashForCreateNodes } from '@nx/devkit/src/utils/calculate-hash-for-create-nodes';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { hashObject } from 'nx/src/devkit-internals';
 import { loadConfigFile } from '@nx/devkit/src/utils/config-utils';
 import { addBuildAndWatchDepsTargets } from '@nx/js/src/plugins/typescript/util';
@@ -35,6 +36,19 @@ export interface ExpoPluginOptions {
   buildDepsTargetName?: string;
   watchDepsTargetName?: string;
 }
+
+const defaultOptions: ExpoPluginOptions = {
+  startTargetName: 'start',
+  serveTargetName: 'serve',
+  runIosTargetName: 'run-ios',
+  runAndroidTargetName: 'run-android',
+  exportTargetName: 'export',
+  prebuildTargetName: 'prebuild',
+  installTargetName: 'install',
+  buildTargetName: 'build',
+  submitTargetName: 'submit',
+};
+
 const pmc = getPackageManagerCommand();
 
 function readTargetsCache(
@@ -102,7 +116,7 @@ async function createNodesInternal(
     Record<string, TargetConfiguration<ExpoPluginOptions>>
   >
 ): Promise<CreateNodesResult> {
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions);
   const projectRoot = dirname(configFile);
 
   // Do not create a project if package.json or project.json or metro.config.js isn't there.
@@ -234,18 +248,4 @@ function getOutputs(projectRoot: string, dir: string) {
   } else {
     return `{workspaceRoot}/${projectRoot}/${dir}`;
   }
-}
-
-function normalizeOptions(options: ExpoPluginOptions): ExpoPluginOptions {
-  options ??= {};
-  options.startTargetName ??= 'start';
-  options.serveTargetName ??= 'serve';
-  options.runIosTargetName ??= 'run-ios';
-  options.runAndroidTargetName ??= 'run-android';
-  options.exportTargetName ??= 'export';
-  options.prebuildTargetName ??= 'prebuild';
-  options.installTargetName ??= 'install';
-  options.buildTargetName ??= 'build';
-  options.submitTargetName ??= 'submit';
-  return options;
 }

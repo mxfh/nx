@@ -17,6 +17,7 @@ import { getNamedInputs } from '@nx/devkit/src/utils/get-named-inputs';
 import { existsSync } from 'fs';
 import { calculateHashForCreateNodes } from '@nx/devkit/src/utils/calculate-hash-for-create-nodes';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { hashObject } from 'nx/src/devkit-internals';
 import { addBuildAndWatchDepsTargets } from '@nx/js/src/plugins/typescript/util';
 
@@ -27,6 +28,12 @@ export interface DetoxPluginOptions {
   buildDepsTargetName?: string;
   watchDepsTargetName?: string;
 }
+
+const defaultOptions: DetoxPluginOptions = {
+  buildTargetName: 'build',
+  startTargetName: 'start',
+  testTargetName: 'test',
+};
 
 const pmc = getPackageManagerCommand();
 
@@ -100,7 +107,7 @@ async function createNodesInternal(
     Record<string, TargetConfiguration<DetoxPluginOptions>>
   >
 ): Promise<CreateNodesResult> {
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions);
   const projectRoot = dirname(configFile);
 
   const hash = await calculateHashForCreateNodes(
@@ -170,12 +177,4 @@ function getInputs(
       externalDependencies: ['detox'],
     },
   ];
-}
-
-function normalizeOptions(options: DetoxPluginOptions): DetoxPluginOptions {
-  options ??= {};
-  options.buildTargetName ??= 'build';
-  options.startTargetName ??= 'start';
-  options.testTargetName ??= 'test';
-  return options;
 }

@@ -28,6 +28,7 @@ import { minimatch } from 'minimatch';
 import { hashObject } from 'nx/src/devkit-internals';
 import { getGlobPatternsFromPackageManagerWorkspaces } from 'nx/src/plugins/package-json';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { combineGlobPatterns } from 'nx/src/utils/globs';
 import { dirname, isAbsolute, join, relative, resolve } from 'path';
 import { getInstalledJestMajorVersion } from '../utils/version-utils';
@@ -52,6 +53,10 @@ export interface JestPluginOptions {
    */
   disableJestRuntime?: boolean;
 }
+
+const defaultOptions: JestPluginOptions = {
+  targetName: 'test',
+};
 
 type JestTargets = Awaited<ReturnType<typeof buildJestTargets>>;
 
@@ -80,7 +85,7 @@ export const createNodesV2: CreateNodesV2<JestPluginOptions> = [
     const packageManagerWorkspacesGlob = combineGlobPatterns(
       getGlobPatternsFromPackageManagerWorkspaces(context.workspaceRoot)
     );
-    options = normalizeOptions(options);
+    options = normalizeOptions(options, defaultOptions);
 
     const { roots: projectRoots, configFiles: validConfigFiles } =
       configFiles.reduce(
@@ -178,7 +183,7 @@ export const createNodes: CreateNodes<JestPluginOptions> = [
       return {};
     }
 
-    options = normalizeOptions(options);
+    options = normalizeOptions(options, defaultOptions);
 
     const { targets, metadata } = await buildJestTargets(
       configFilePath,
@@ -638,12 +643,6 @@ function getOutputs(
   }
 
   return outputs;
-}
-
-function normalizeOptions(options: JestPluginOptions): JestPluginOptions {
-  options ??= {};
-  options.targetName ??= 'test';
-  return options;
 }
 
 let resolvedJestPaths: Record<string, string>;

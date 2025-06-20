@@ -16,6 +16,7 @@ import { isUsingTsSolutionSetup } from '@nx/js/src/utils/typescript/ts-solution-
 import { existsSync, readdirSync } from 'fs';
 import { hashArray, hashFile, hashObject } from 'nx/src/hasher/file-hasher';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'path';
 import { readRspackOptions } from '../utils/read-rspack-options';
 import { resolveUserDefinedRspackConfig } from '../utils/resolve-user-defined-rspack-config';
@@ -29,6 +30,13 @@ export interface RspackPluginOptions {
   buildDepsTargetName?: string;
   watchDepsTargetName?: string;
 }
+
+const defaultOptions: RspackPluginOptions = {
+  buildTargetName: 'build',
+  serveTargetName: 'serve',
+  serveStaticTargetName: 'serve-static',
+  previewTargetName: 'preview',
+};
 
 type RspackTargets = Pick<ProjectConfiguration, 'targets' | 'metadata'>;
 
@@ -111,7 +119,7 @@ async function createNodesInternal(
     );
   }
 
-  const normalizedOptions = normalizeOptions(options);
+  const normalizedOptions = normalizeOptions(options, defaultOptions);
 
   const lockFileHash =
     hashFile(
@@ -277,15 +285,6 @@ async function createRspackTargets(
   );
 
   return { targets, metadata: {} };
-}
-
-function normalizeOptions(options: RspackPluginOptions): RspackPluginOptions {
-  options ??= {};
-  options.buildTargetName ??= 'build';
-  options.serveTargetName ??= 'serve';
-  options.previewTargetName ??= 'preview';
-  options.serveStaticTargetName ??= 'serve-static';
-  return options;
 }
 
 function normalizeOutputPath(

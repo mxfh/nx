@@ -17,6 +17,7 @@ import { getNamedInputs } from '@nx/devkit/src/utils/get-named-inputs';
 import { existsSync, readdirSync } from 'fs';
 import { calculateHashForCreateNodes } from '@nx/devkit/src/utils/calculate-hash-for-create-nodes';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { loadConfigFile } from '@nx/devkit/src/utils/config-utils';
 import { hashObject } from 'nx/src/devkit-internals';
 
@@ -31,6 +32,18 @@ export interface ReactNativePluginOptions {
   syncDepsTargetName?: string;
   upgradeTargetName?: string;
 }
+
+const defaultOptions: Required<ReactNativePluginOptions> = {
+  startTargetName: 'start',
+  podInstallTargetName: 'pod-install',
+  runIosTargetName: 'run-ios',
+  runAndroidTargetName: 'run-android',
+  buildIosTargetName: 'build-ios',
+  buildAndroidTargetName: 'build-android',
+  bundleTargetName: 'bundle',
+  syncDepsTargetName: 'sync-deps',
+  upgradeTargetName: 'upgrade',
+};
 
 function readTargetsCache(
   cachePath: string
@@ -111,7 +124,7 @@ async function createNodesInternal(
     Record<string, TargetConfiguration<ReactNativePluginOptions>>
   >
 ): Promise<CreateNodesResult> {
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions);
   const projectRoot = dirname(configFile);
 
   // Do not create a project if package.json or project.json or metro.config.js isn't there.
@@ -244,20 +257,4 @@ function getOutputs(projectRoot: string, dir: string) {
   } else {
     return `{workspaceRoot}/${projectRoot}/${dir}`;
   }
-}
-
-function normalizeOptions(
-  options: ReactNativePluginOptions
-): ReactNativePluginOptions {
-  options ??= {};
-  options.startTargetName ??= 'start';
-  options.podInstallTargetName ??= 'pod-install';
-  options.runIosTargetName ??= 'run-ios';
-  options.runAndroidTargetName ??= 'run-android';
-  options.buildIosTargetName ??= 'build-ios';
-  options.buildAndroidTargetName ??= 'build-android';
-  options.bundleTargetName ??= 'bundle';
-  options.syncDepsTargetName ??= 'sync-deps';
-  options.upgradeTargetName ??= 'upgrade';
-  return options;
 }

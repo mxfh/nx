@@ -21,6 +21,7 @@ import { isUsingTsSolutionSetup } from '@nx/js/src/utils/typescript/ts-solution-
 import { existsSync, readdirSync } from 'fs';
 import { hashObject } from 'nx/src/hasher/file-hasher';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { dirname, isAbsolute, join, relative, resolve } from 'path';
 import { readWebpackOptions } from '../utils/webpack/read-webpack-options';
 import { resolveUserDefinedWebpackConfig } from '../utils/webpack/resolve-user-defined-webpack-config';
@@ -33,9 +34,16 @@ export interface WebpackPluginOptions {
   serveTargetName?: string;
   serveStaticTargetName?: string;
   previewTargetName?: string;
-  buildDepsTargetName?: string;
-  watchDepsTargetName?: string;
+  buildDepsTargetName?: string; // Internal use only, do not set this option, will be overridden if set.
+  watchDepsTargetName?: string; // Internal use only, do not set this option, will be overridden if set.
 }
+
+const defaultOptions: WebpackPluginOptions = {
+  buildTargetName: 'build',
+  serveTargetName: 'serve',
+  serveStaticTargetName: 'serve-static',
+  previewTargetName: 'preview',
+};
 
 type WebpackTargets = Pick<ProjectConfiguration, 'targets' | 'metadata'>;
 
@@ -68,7 +76,7 @@ export const createNodesV2: CreateNodesV2<WebpackPluginOptions> = [
       `webpack-${optionsHash}.hash`
     );
     const targetsCache = readTargetsCache(cachePath);
-    const normalizedOptions = normalizeOptions(options);
+    const normalizedOptions = normalizeWebpackOptions(options, defaultOptions);
     const isTsSolutionSetup = isUsingTsSolutionSetup();
     try {
       return await createNodesFromFiles(
@@ -96,7 +104,7 @@ export const createNodes: CreateNodes<WebpackPluginOptions> = [
     logger.warn(
       '`createNodes` is deprecated. Update your plugin to utilize createNodesV2 instead. In Nx 20, this will change to the createNodesV2 API.'
     );
-    const normalizedOptions = normalizeOptions(options);
+    const normalizedOptions = normalizeWebpackOptions(options, defaultOptions);
     return createNodesInternal(
       configFilePath,
       normalizedOptions,
@@ -331,15 +339,20 @@ function normalizeOutputPath(
   }
 }
 
-function normalizeOptions(
-  options: WebpackPluginOptions
+function normalizeWebpackOptions(
+  options: WebpackPluginOptions | undefined,
+  defaults: Omit<
+    Required<WebpackPluginOptions>,
+    'buildDepsTargetName' | 'watchDepsTargetName'
+  >
 ): Required<WebpackPluginOptions> {
-  return {
-    buildTargetName: options?.buildTargetName ?? 'build',
-    serveTargetName: options?.serveTargetName ?? 'serve',
-    serveStaticTargetName: options?.serveStaticTargetName ?? 'serve-static',
-    previewTargetName: options?.previewTargetName ?? 'preview',
+  const partial = normalizeOptions(options, defaults);
+
+  // TODO: clarify if this behavior is desired, just replicating prior behavior with types now
+  const required: Required<WebpackPluginOptions> = {
+    ...partial,
     buildDepsTargetName: 'build-deps',
     watchDepsTargetName: 'watch-deps',
   };
+  return required;
 }

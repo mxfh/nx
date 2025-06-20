@@ -26,6 +26,7 @@ import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
 import { NX_PLUGIN_OPTIONS } from '../utils/constants';
 import { loadConfigFile } from '@nx/devkit/src/utils/config-utils';
 import { hashObject } from 'nx/src/devkit-internals';
+import { normalizeOptions } from 'nx/src/utils/normalize-options';
 import { globWithWorkspaceContext } from 'nx/src/utils/workspace-context';
 
 export interface CypressPluginOptions {
@@ -34,6 +35,13 @@ export interface CypressPluginOptions {
   openTargetName?: string;
   componentTestingTargetName?: string;
 }
+
+const defaultOptions: Required<CypressPluginOptions> = {
+  ciTargetName: 'e2e-ci',
+  targetName: 'e2e',
+  openTargetName: 'open-cypress',
+  componentTestingTargetName: 'component-test',
+};
 
 function readTargetsCache(cachePath: string): Record<string, CypressTargets> {
   try {
@@ -96,7 +104,7 @@ async function createNodesInternal(
   context: CreateNodesContext,
   targetsCache: CypressTargets
 ) {
-  options = normalizeOptions(options);
+  options = normalizeOptions(options, defaultOptions);
   const projectRoot = dirname(configFilePath);
 
   // Do not create a project if package.json and project.json isn't there.
@@ -473,15 +481,6 @@ async function buildCypressTargets(
   };
 
   return { targets, metadata };
-}
-
-function normalizeOptions(options: CypressPluginOptions): CypressPluginOptions {
-  options ??= {};
-  options.targetName ??= 'e2e';
-  options.openTargetName ??= 'open-cypress';
-  options.componentTestingTargetName ??= 'component-test';
-  options.ciTargetName ??= 'e2e-ci';
-  return options;
 }
 
 function getInputs(
